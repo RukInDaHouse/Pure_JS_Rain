@@ -196,3 +196,77 @@ demo.draw = function() {
 	}
 }
 
+
+// Rain definition
+function Rain() {
+	this.x = 0;
+	this.y = 0;
+	this.z = 0;
+	this.speed = 25;
+	this.splashed = false;
+}
+Rain.width = 2;
+Rain.height = 40;
+Rain.prototype.init = function() {
+	this.y = Math.random() * -100;
+	this.z = Math.random() * 0.5 + 0.5;
+	this.splashed = false;
+}
+Rain.prototype.recycle = function() {
+	demo.rain_pool.push(this);
+}
+// recycle rain particle and create a burst of droplets
+Rain.prototype.splash = function() {
+	if (!this.splashed) {
+		this.splashed = true;
+		var drops = demo.drops;
+		var drop_pool = demo.drop_pool;
+
+		for (var i=0; i<16; i++) {
+			var drop = drop_pool.pop() || new Drop();
+			drops.push(drop);
+			drop.init(this.x);
+		}
+	}
+}
+
+
+// Droplet definition
+function Drop() {
+	this.x = 0;
+	this.y = 0;
+	this.radius = Math.round(Math.random() * 2 + 1) * demo.dpr;
+	this.speed_x = 0;
+	this.speed_y = 0;
+	this.canvas = document.createElement('canvas');
+	this.ctx = this.canvas.getContext('2d');
+	
+	// render once and cache
+	var diameter = this.radius * 2;
+	this.canvas.width = diameter;
+	this.canvas.height = diameter;
+
+	var grd = this.ctx.createRadialGradient(this.radius, this.radius , 1, this.radius, this.radius, this.radius);
+	grd.addColorStop(0, demo.rain_color);
+	grd.addColorStop(1, demo.rain_color_clear);
+	this.ctx.fillStyle = grd;
+	this.ctx.fillRect(0, 0, diameter, diameter);
+}
+
+Drop.max_speed = 5;
+
+Drop.prototype.init = function(x) {
+	this.x = x;
+	this.y = demo.height;
+	var angle = Math.random() * Math.PI - (Math.PI * 0.5);
+	var speed = Math.random() * Drop.max_speed;
+	this.speed_x = Math.sin(angle) * speed;
+	this.speed_y = -Math.cos(angle) * speed;
+}
+Drop.prototype.recycle = function() {
+	demo.drop_pool.push(this);
+}
+
+
+
+
