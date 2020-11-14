@@ -270,3 +270,80 @@ Drop.prototype.recycle = function() {
 
 
 
+// handle interaction
+demo.mouseHandler = function(evt) {
+	demo.updateCursor(evt.clientX, evt.clientY);
+}
+demo.touchHandler = function(evt) {
+	evt.preventDefault();
+	var touch = evt.touches[0];
+	demo.updateCursor(touch.clientX, touch.clientY);
+}
+demo.updateCursor = function(x, y) {
+	x /= demo.width;
+	y /= demo.height;
+	var y_inverse = (1 - y);
+	
+	demo.drop_delay = y_inverse*y_inverse*y_inverse * 100 + 2;
+	demo.wind = (x - 0.5) * 50;
+}
+
+document.addEventListener('mousemove', demo.mouseHandler);
+document.addEventListener('touchstart', demo.touchHandler);
+document.addEventListener('touchmove', demo.touchHandler);
+
+
+
+// Frame ticker helper module
+var Ticker = (function(){
+	var PUBLIC_API = {};
+
+	// public
+	// will call function reference repeatedly once registered, passing elapsed time and a lag multiplier as parameters
+	PUBLIC_API.addListener = function addListener(fn) {
+		if (typeof fn !== 'function') throw('Ticker.addListener() requires a function reference passed in.');
+
+		listeners.push(fn);
+
+		// start frame-loop lazily
+		if (!started) {
+			started = true;
+			queueFrame();
+		}
+	};
+
+	// private
+	var started = false;
+	var last_timestamp = 0;
+	var listeners = [];
+	// queue up a new frame (calls frameHandler)
+	function queueFrame() {
+		if (window.requestAnimationFrame) {
+			requestAnimationFrame(frameHandler);
+		} else {
+			webkitRequestAnimationFrame(frameHandler);
+		}
+	}
+	function frameHandler(timestamp) {
+		var frame_time = timestamp - last_timestamp;
+		last_timestamp = timestamp;
+		// make sure negative time isn't reported (first frame can be whacky)
+		if (frame_time < 0) {
+			frame_time = 17;
+		}
+		// - cap minimum framerate to 15fps[~68ms] (assuming 60fps[~17ms] as 'normal')
+		else if (frame_time > 68) {
+			frame_time = 68;
+		}
+
+		// fire custom listeners
+		for (var i = 0, len = listeners.length; i < len; i++) {
+			listeners[i].call(window, frame_time, frame_time / 16.67);
+		}
+		
+		// always queue another frame
+		queueFrame();
+	}
+
+	return PUBLIC_API;
+}());
